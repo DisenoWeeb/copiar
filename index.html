@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#1a56db" />
+  <title>Copiá del Cuaderno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Patrick+Hand+SC&family=Caveat:wght@400;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════ PANTALLA PRINCIPAL ═══════════════ -->
+  <div id="screen-upload" class="screen active">
+
+    <header class="app-header">
+      <div class="logo-wrap">
+        <div class="logo-icon">📓</div>
+        <div class="logo-text">
+          <span class="logo-title">Copiá del</span>
+          <span class="logo-sub">CUADERNO</span>
+        </div>
+      </div>
+      <p class="tagline">Sacá una foto al cuaderno y copialo en el celu 📱</p>
+    </header>
+
+    <main class="upload-main">
+
+      <!-- Zona de selección -->
+      <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Seleccionar fotos del cuaderno">
+        <input type="file" id="fileInput" accept="image/*" multiple hidden />
+        <div class="drop-zone__icon">📷</div>
+        <p class="drop-zone__text">Tocá para elegir fotos</p>
+        <p class="drop-zone__hint">Podés subir varias páginas a la vez</p>
+        <button class="btn btn--primary" id="btnSelect" type="button">Elegir fotos</button>
+      </div>
+
+      <!-- Preview de miniaturas -->
+      <div class="preview-section" id="previewSection" hidden>
+        <div class="preview-header">
+          <h2 class="preview-title">Fotos seleccionadas</h2>
+          <span class="preview-count" id="previewCount"></span>
+        </div>
+        <div class="thumbnail-grid" id="thumbnailGrid"></div>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="action-bar" id="actionBar" hidden>
+        <button class="btn btn--success btn--large" id="btnGenerate" type="button">
+          <span class="btn-icon">✨</span> Generar Cuaderno
+        </button>
+        <button class="btn btn--ghost" id="btnClearUpload" type="button">
+          <span class="btn-icon">🗑️</span> Limpiar
+        </button>
+      </div>
+
+      <!-- Indicador de progreso -->
+      <div class="progress-wrap" id="progressWrap" hidden>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <p class="progress-msg" id="progressMsg">Subiendo fotos...</p>
+      </div>
+
+      <!-- Mensajes de error -->
+      <div class="error-box" id="errorBox" hidden role="alert">
+        <span class="error-icon">⚠️</span>
+        <p class="error-text" id="errorText"></p>
+        <button class="error-close" id="errorClose" type="button" aria-label="Cerrar">✕</button>
+      </div>
+
+    </main>
+
+    <footer class="app-footer">
+      <p>Hecho con ❤️ para ayudar a los chicos a copiar mejor</p>
+    </footer>
+
+  </div>
+
+  <!-- ═══════════════ PANTALLA RESULTADO ═══════════════ -->
+  <div id="screen-result" class="screen">
+
+    <div class="result-topbar">
+      <button class="btn btn--back" id="btnBack" type="button">← Volver</button>
+      <span class="result-topbar__title">Tu cuaderno digital</span>
+      <button class="btn btn--ghost btn--sm" id="btnClearResult" type="button">🗑️ Limpiar</button>
+    </div>
+
+    <div class="notebook" id="notebook">
+      <!-- Contenido generado dinámicamente -->
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
