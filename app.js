@@ -11,11 +11,11 @@
 ══════════════════════════════════════════════════════════════ */
 const CONFIG = {
   // Cloudinary — obtener en cloudinary.com/console
-  CLOUDINARY_CLOUD_NAME: 'TU_CLOUD_NAME',          // ej: 'mi-cloud'
-  CLOUDINARY_UPLOAD_PRESET: 'TU_UNSIGNED_PRESET',  // ej: 'cuaderno_preset'
+  CLOUDINARY_CLOUD_NAME: 'dwgwbdtud',          // ej: 'mi-cloud'
+  CLOUDINARY_UPLOAD_PRESET: 'dra_bruzera_unsigned',  // ej: 'cuaderno_preset'
 
   // Google Apps Script — URL del Web App desplegado
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/TU_SCRIPT_ID/exec',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwQgB-j6gVQavpAusEmZElfRG1LbO6WD0dkn_wdHvamjRHo6yYiG9VrWPC8sVVVBna-/exec',
 };
 
 /* ═══════════════ Estado de la aplicación ═══════════════════ */
