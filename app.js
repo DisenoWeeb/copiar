@@ -1,3 +1,4 @@
+
 /* ═══════════════════════════════════════════════════════════════
    COPIÁ DEL CUADERNO — app.js
    Vanilla JS · No frameworks · Mobile First
@@ -17,6 +18,7 @@ const CONFIG = {
   // Google Apps Script — URL del Web App desplegado
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwQgB-j6gVQavpAusEmZElfRG1LbO6WD0dkn_wdHvamjRHo6yYiG9VrWPC8sVVVBna-/exec',
 };
+
 
 /* ═══════════════ Estado de la aplicación ═══════════════════ */
 const state = {
@@ -302,6 +304,90 @@ async function callAppsScript(imageUrls) {
   return data;
 }
 
+/* ═══════════════ LIGHTBOX ════════════════════════════════════ */
+
+function openLightbox(src, alt) {
+  // Crear overlay
+  const lb = document.createElement('div');
+  lb.className = 'lightbox';
+  lb.setAttribute('role', 'dialog');
+  lb.setAttribute('aria-modal', 'true');
+  lb.setAttribute('aria-label', alt || 'Imagen ampliada');
+
+  const img = document.createElement('img');
+  img.className = 'lightbox__img';
+  img.src = src;
+  img.alt = alt || '';
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'lightbox__close';
+  closeBtn.innerHTML = '✕';
+  closeBtn.setAttribute('aria-label', 'Cerrar imagen');
+
+  lb.append(img, closeBtn);
+  document.body.appendChild(lb);
+
+  const close = () => {
+    lb.style.animation = 'none';
+    lb.style.opacity = '0';
+    lb.style.transition = 'opacity .15s';
+    setTimeout(() => lb.remove(), 150);
+  };
+
+  closeBtn.addEventListener('click', close);
+  lb.addEventListener('click', e => { if (e.target === lb) close(); });
+  document.addEventListener('keydown', function esc(e) {
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+  });
+}
+
+/* ═══════════════ CANVAS CROP ════════════════════════════════
+   Recorta la foto de la página completa y la muestra inline.
+   Como OpenAI no devuelve coordenadas, se muestra la foto
+   completa de esa página escalada — el usuario puede tocar
+   para ampliarla en el lightbox y ver el dibujo/fotocopia.
+════════════════════════════════════════════════════════════ */
+
+/**
+ * Genera una URL de datos de un recorte de la imagen original.
+ * imageIndex: índice de la página (para mapear a files[])
+ * bloqueIndex: posición del bloque imagen en los bloques totales de esa página
+ * totalBloques: total de bloques en la página (para estimar posición vertical)
+ * files: File[]
+ * returns Promise<string> — dataURL del recorte
+ */
+function cropImageBlock(file, bloqueIndex, totalBloques) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Estimar zona vertical del bloque imagen dentro de la página
+      // (reparto proporcional simple — sin coordenadas exactas de OpenAI)
+      const sliceH = Math.round(img.height / Math.max(totalBloques, 1));
+      const y = bloqueIndex * sliceH;
+      const h = sliceH;
+
+      canvas.width  = img.width;
+      canvas.height = h;
+      ctx.drawImage(img, 0, y, img.width, h, 0, 0, img.width, h);
+
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('No se pudo cargar la imagen para recortar'));
+    };
+
+    img.src = objectUrl;
+  });
+}
+
 /* ═══════════════ RENDER CUADERNO ═══════════════════════════ */
 
 /**
@@ -325,8 +411,9 @@ function renderNotebook(data, files) {
 
     const tipoEscritura = (pagina.tipo_escritura || 'MIXTA').toUpperCase();
     const bloques = Array.isArray(pagina.bloques) ? pagina.bloques : [];
+    const totalBloques = bloques.length;
 
-    bloques.forEach(bloque => {
+    bloques.forEach((bloque, bIdx) => {
       if (bloque.tipo === 'texto' && bloque.contenido) {
         // Dividir por saltos de línea para respetar el renglonado
         const lineas = String(bloque.contenido).split('\n');
@@ -339,23 +426,58 @@ function renderNotebook(data, files) {
           el.appendChild(p);
           notebook.appendChild(el);
         });
+
       } else if (bloque.tipo === 'imagen') {
         const wrapper = document.createElement('div');
-        wrapper.className = 'nb-block nb-image-block';
+        wrapper.className = 'nb-image-block';
 
-        const placeholder = document.createElement('div');
-        placeholder.className = 'nb-image-placeholder';
-        placeholder.innerHTML = `
-          <span class="nb-image-placeholder__icon">🎨</span>
-          <span>Acá hay un dibujo o imagen</span>
-          <span style="font-size:.75rem;margin-top:4px;opacity:.7">(mirá el original)</span>
-        `;
-        wrapper.appendChild(placeholder);
+        if (files[pIdx]) {
+          // Mostrar spinner mientras carga el canvas
+          const loading = document.createElement('div');
+          loading.className = 'nb-image-loading';
+          loading.innerHTML = `
+            <div class="nb-image-loading__dot"></div>
+            <div class="nb-image-loading__dot"></div>
+            <div class="nb-image-loading__dot"></div>
+          `;
+          wrapper.appendChild(loading);
+
+          // Recortar y mostrar
+          cropImageBlock(files[pIdx], bIdx, totalBloques)
+            .then(dataUrl => {
+              loading.remove();
+
+              const cropImg = document.createElement('img');
+              cropImg.className = 'nb-image-crop';
+              cropImg.src = dataUrl;
+              cropImg.alt = `Imagen/dibujo — página ${pIdx + 1}`;
+              cropImg.title = 'Tocá para ampliar';
+              cropImg.loading = 'lazy';
+
+              cropImg.addEventListener('click', () => openLightbox(dataUrl, `Página ${pIdx + 1} — imagen`));
+
+              wrapper.appendChild(cropImg);
+            })
+            .catch(() => {
+              // Fallback: mostrar la imagen completa si el crop falla
+              loading.remove();
+              const fallbackImg = document.createElement('img');
+              fallbackImg.className = 'nb-image-crop';
+              fallbackImg.alt = `Imagen/dibujo — página ${pIdx + 1}`;
+              fallbackImg.title = 'Tocá para ampliar';
+              const objUrl = URL.createObjectURL(files[pIdx]);
+              fallbackImg.src = objUrl;
+              fallbackImg.onload = () => URL.revokeObjectURL(objUrl);
+              fallbackImg.addEventListener('click', () => openLightbox(fallbackImg.src, `Página ${pIdx + 1} — imagen`));
+              wrapper.appendChild(fallbackImg);
+            });
+        }
+
         notebook.appendChild(wrapper);
       }
     });
 
-    // Agregar foto original al final de cada página
+    // Foto original completa al final de cada página (para referencia)
     if (files[pIdx]) {
       const photoWrap = document.createElement('div');
       photoWrap.style.cssText = 'padding: 20px 0 10px; text-align: center;';
@@ -367,9 +489,14 @@ function renderNotebook(data, files) {
       const img = document.createElement('img');
       img.className = 'original-photo';
       img.alt = `Foto original página ${pIdx + 1}`;
-      img.src = URL.createObjectURL(files[pIdx]);
-      img.onload = () => URL.revokeObjectURL(img.src);
+      img.title = 'Tocá para ampliar';
+      img.style.cssText = 'cursor: zoom-in;';
       img.loading = 'lazy';
+
+      const objUrl = URL.createObjectURL(files[pIdx]);
+      img.src = objUrl;
+      img.onload = () => URL.revokeObjectURL(objUrl);
+      img.addEventListener('click', () => openLightbox(img.src, `Foto original — página ${pIdx + 1}`));
 
       photoWrap.append(label, img);
       notebook.appendChild(photoWrap);
