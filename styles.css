@@ -16,7 +16,7 @@
   --line-color:        #a8c4e8;
   --margin-color:      #e85555;
   --margin-width:      52px;
-  --line-height-nb:    44px;
+  --line-height-nb:    34px;
 
   /* UI principal */
   --blue-dark:         #1a4fa0;
@@ -483,37 +483,47 @@ body {
 }
 
 /* ── Bloque de texto ────────────────────────────────────────── */
+/*
+  Truco para que el texto quede SOBRE el renglón (no colgando debajo):
+  Cada .nb-block tiene exactamente --line-height-nb de alto.
+  El texto se alinea al fondo del bloque con padding-bottom mínimo,
+  de modo que la base del texto coincida con la línea azul.
+*/
 .nb-block {
   position: relative;
-  margin-bottom: 0;
-  line-height: var(--line-height-nb);
+  height: var(--line-height-nb);
+  display: flex;
+  align-items: flex-end;   /* texto apoyado sobre el renglón */
+  overflow: visible;
 }
 
 .nb-text {
-  font-size: 1.5rem;
+  font-size: 1rem;
+  line-height: 1;
   word-break: break-word;
   color: #1a1a2e;
-  padding: 0 0 0 4px;
+  padding: 0 4px 2px 4px;  /* 2px sobre la línea para que no la tape */
   user-select: text;
+  width: 100%;
 }
 
 /* Tipos de escritura */
 .nb-text.tipo-MAYUSCULA {
   font-family: var(--font-school-caps);
-  font-size: 1.35rem;
+  font-size: .95rem;
   letter-spacing: .03em;
   text-transform: uppercase;
 }
 
 .nb-text.tipo-MINUSCULA {
   font-family: var(--font-school);
-  font-size: 1.5rem;
+  font-size: 1rem;
   text-transform: lowercase;
 }
 
 .nb-text.tipo-CURSIVA {
   font-family: var(--font-cursive);
-  font-size: 1.7rem;
+  font-size: 1.15rem;
   font-weight: 600;
 }
 
@@ -522,39 +532,91 @@ body {
   font-size: 1rem;
 }
 
-/* ── Bloque imagen ──────────────────────────────────────────── */
+/* ── Bloque imagen — recorte real ──────────────────────────── */
 .nb-image-block {
-  margin: 8px 0;
-  padding: 8px 0;
+  /* ocupa renglones múltiples según el alto del recorte */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.nb-image-block__label {
-  font-family: var(--font-school);
-  font-size: .85rem;
-  color: var(--gray-500);
-  font-style: italic;
-}
-
-.nb-image-placeholder {
-  background: var(--gray-50);
-  border: 2px dashed var(--line-color);
-  border-radius: var(--radius-sm);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  color: var(--gray-500);
-  font-family: var(--font-school);
-  font-size: .9rem;
+  align-items: flex-start;
+  padding: 6px 4px;
   width: 100%;
 }
 
-.nb-image-placeholder__icon { font-size: 2rem; }
+.nb-image-crop {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  cursor: zoom-in;
+  border: 1.5px solid var(--line-color);
+  transition: transform .15s, box-shadow .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.nb-image-crop:active {
+  transform: scale(.97);
+}
+
+/* Spinner mientras el canvas procesa */
+.nb-image-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-school);
+  font-size: .85rem;
+  color: var(--gray-500);
+  padding: 8px 4px;
+}
+.nb-image-loading__dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--blue-mid);
+  animation: blink 1s ease-in-out infinite;
+}
+.nb-image-loading__dot:nth-child(2) { animation-delay: .2s; }
+.nb-image-loading__dot:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%,100%{opacity:.2} 50%{opacity:1} }
+
+/* ── LIGHTBOX ───────────────────────────────────────────────── */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.88);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: lbIn .2s ease;
+}
+@keyframes lbIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.lightbox__img {
+  max-width: 100%;
+  max-height: 90dvh;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 40px rgba(0,0,0,.6);
+  object-fit: contain;
+}
+.lightbox__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255,255,255,.15);
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.lightbox__close:hover { background: rgba(255,255,255,.25); }
 
 /* ── Separador de página ────────────────────────────────────── */
 .nb-page-separator {
@@ -624,10 +686,10 @@ body {
     grid-template-columns: repeat(4, 1fr);
   }
 
-  .nb-text.tipo-MAYUSCULA { font-size: 1.5rem; }
-  .nb-text.tipo-MINUSCULA { font-size: 1.6rem; }
-  .nb-text.tipo-CURSIVA   { font-size: 1.85rem; }
-  .nb-text.tipo-MIXTA     { font-size: 1.6rem; }
+  .nb-text.tipo-MAYUSCULA { font-size: 1rem; }
+  .nb-text.tipo-MINUSCULA { font-size: 1.05rem; }
+  .nb-text.tipo-CURSIVA   { font-size: 1.2rem; }
+  .nb-text.tipo-MIXTA     { font-size: 1rem; }
 }
 
 @media (min-width: 700px) {
